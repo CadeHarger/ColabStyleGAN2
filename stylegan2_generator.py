@@ -100,18 +100,18 @@ class SynthesisNetwork(tf.keras.layers.Layer):
         
         # Early layers
         x = tf.tile(tf.cast(self.const_4_4, 'float32'), [tf.shape(dlatents_in)[0], 1, 1, 1])
-        x = self.layer_4_4(x, dlatents_in[:, 0])
-        y = self.torgb_4_4(x, dlatents_in[:, 1], y)
-                
+        x, s = self.layer_4_4(x, dlatents_in[:, 0])
+        y, s1 = self.torgb_4_4(x, dlatents_in[:, 1], y)
+        styles = tf.concat([s, s1], -1) 
         # Main layers
         for res in range(3, self.resolution_log2 + 1):
-            x = getattr(self, 'layer_{}_{}_up'.format(2**res, 2**res))(x, dlatents_in[:, res*2-5])
-            x = getattr(self, 'layer_{}_{}'.format(2**res, 2**res))(x, dlatents_in[:, res*2-4])
+            x, s1 = getattr(self, 'layer_{}_{}_up'.format(2**res, 2**res))(x, dlatents_in[:, res*2-5])
+            x, s2 = getattr(self, 'layer_{}_{}'.format(2**res, 2**res))(x, dlatents_in[:, res*2-4])
             y = upsample_2d(y, k=self.resample_kernel, impl=self.impl, gpu=self.gpu)
-            y = getattr(self, 'torgb_{}_{}'.format(2**res, 2**res))(x, dlatents_in[:, res*2-3], y)
-                    
+            y, s3 = getattr(self, 'torgb_{}_{}'.format(2**res, 2**res))(x, dlatents_in[:, res*2-3], y)
+            styles = tf.concat([styles, s1, s2, s3], -1)
         images_out = y
-        return tf.identity(images_out, name='images_out')
+        return tf.identity(images_out, name='images_out'), styles
     
 class StyleGan2Generator(tf.keras.layers.Layer):
     """
@@ -163,9 +163,9 @@ class StyleGan2Generator(tf.keras.layers.Layer):
 
         """
         dlatents = self.mapping_network(z)
-        img = self.synthesis_network(dlatents)
+        img, s = self.synthesis_network(dlatents)
 
-        return img
+        return img, s
     
     def __adjust_resolution(self, weights_name):
         """
