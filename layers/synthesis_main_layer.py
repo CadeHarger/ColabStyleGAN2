@@ -34,7 +34,7 @@ class SynthesisMainLayer(tf.keras.layers.Layer):
         
     def call(self, x, dlatent_vect):
                 
-        x = self.mod_conv2d_layer(x, dlatent_vect)
+        x, s = self.mod_conv2d_layer(x, dlatent_vect)
         
         #randomize noise
         noise = tf.random.normal([tf.shape(x)[0], 1, x.shape[2], x.shape[3]], dtype=x.dtype)
@@ -46,4 +46,4 @@ class SynthesisMainLayer(tf.keras.layers.Layer):
         x += tf.reshape(self.bias, [-1 if i == 1 else 1 for i in range(x.shape.rank)])
         x = tf.math.multiply(tf.nn.leaky_relu(x, 0.2), tf.math.sqrt(2.))
         
-        return x
+        return x, s
