@@ -23,7 +23,7 @@ class ToRgbLayer(tf.keras.layers.Layer):
         
     def call(self, x, dlatent_vect, y):
         
-        u = self.mod_conv2d_rgb(x, dlatent_vect)
+        u, s = self.mod_conv2d_rgb(x, dlatent_vect)
         t = u + tf.reshape(self.rgb_bias, [-1 if i == 1 else 1 for i in range(x.shape.rank)])
         
-        return t if y is None else y + t
+        return (t if y is None else y + t), s
