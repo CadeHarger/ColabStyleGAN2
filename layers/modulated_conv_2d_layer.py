@@ -96,4 +96,4 @@ class ModulatedConv2DLayer(tf.keras.layers.Layer):
             x = tf.reshape(x, [-1, self.fmaps, x.shape[2], x.shape[3]]) # Fused => reshape convolution groups back to minibatch.
         elif self.demodulate:
             x = tf.math.multiply(x, tf.cast(d[:, :, np.newaxis, np.newaxis], x.dtype)) # [BOhw] Not fused => scale output activations.
-        return x
+        return x, s
