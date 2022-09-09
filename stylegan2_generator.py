@@ -102,18 +102,13 @@ class SynthesisNetwork(tf.keras.layers.Layer):
         x, s = self.layer_4_4(x, dlatents_in[:, 0])
         y, s1 = self.torgb_4_4(x, dlatents_in[:, 1], y)
         styles = tf.concat([s, s1], -1) 
-        shapes = [(s.shape, 0), (s1.shape, 1)]
         # Main layers
         for res in range(3, self.resolution_log2 + 1):
             x, s1 = getattr(self, 'layer_{}_{}_up'.format(2**res, 2**res))(x, dlatents_in[:, res*2-5])
-            shapes.append((s1.shape, res*2-5))
             x, s2 = getattr(self, 'layer_{}_{}'.format(2**res, 2**res))(x, dlatents_in[:, res*2-4])
-            shapes.append((s2.shape, res*2-4))
             y = upsample_2d(y, k=self.resample_kernel, impl=self.impl, gpu=self.gpu)
             y, s3 = getattr(self, 'torgb_{}_{}'.format(2**res, 2**res))(x, dlatents_in[:, res*2-3], y)
-            shapes.append((s3.shape, res*2-3))
             styles = tf.concat([styles, s1, s2, s3], -1)
-        print(shapes)
         images_out = y
         return tf.identity(images_out, name='images_out'), styles
     
